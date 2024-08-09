@@ -1,0 +1,33 @@
+name: Build
+on: push
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+      - name: Compile
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cl .\hello.cpp
+          .\hello.exe
+      - name: Attest
+        uses: actions/attest@v1
+        with:
+          subject-path: 'hello.exe'
+          predicate-type: 'https://in-toto.io/attestation/release/v0.1'
+          predicate: '{"purl": "git+https://github.com/qstokkink/testghattestations.git@1","releaseId": "1"}'
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Build
+          retention-days: 2
+          path: |
+            *
