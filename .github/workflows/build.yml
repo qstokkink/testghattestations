@@ -18,10 +18,20 @@ jobs:
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           cl .\hello.cpp
           .\hello.exe
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install lief
+        run: |
+          pip install lief
+          python -c "import lief, binascii; print('DIGEST=' + binascii.hexlify(lief.parse('hello.exe').authentihash_sha256).decode())" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Double check DIGEST
+        run: echo ${{ env.DIGEST }}
       - name: Attest
         uses: actions/attest@v1
         with:
-          subject-path: 'hello.exe'
+          subject-name: 'hello.exe'
+          subject-digest: sha256:${{ env.DIGEST }}
           predicate-type: 'https://in-toto.io/attestation/release/v0.1'
           predicate: '{"purl": "git+https://github.com/qstokkink/testghattestations.git@1","releaseId": "1"}'
       - name: Upload Artifacts
